@@ -1,335 +1,1083 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard del Curso</title>
-<style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body { display: flex; height: 100vh; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #f9fafb; color: #1f2937; }
-
-  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; }
-  #overlay.show { display: block; }
-
-  #sidebar { width: 18rem; flex-shrink: 0; display: flex; flex-direction: column; background: #312e81; color: #fff; box-shadow: 0 10px 25px rgba(0,0,0,.25); z-index: 50; }
-  .sidebar-head { padding: 1.5rem; border-bottom: 1px solid #3730a3; display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
-  #sidebar-course-title { margin: 0; font-size: 1.1rem; line-height: 1.25; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-  .close-btn { display: none; background: none; border: 0; color: #fff; font-size: 1.5rem; cursor: pointer; }
-  .lang-row { padding: .75rem 1.5rem; border-bottom: 1px solid #3730a3; background: #1e1b4b; display: flex; align-items: center; justify-content: space-between; }
-  .lang-row span { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; color: #a5b4fc; }
-  #langSelect { background: #3730a3; color: #fff; font-size: .85rem; border-radius: .25rem; padding: .2rem .5rem; border: 1px solid #4338ca; outline: none; }
-  #nav-container { flex: 1; overflow-y: auto; padding: 1rem; }
-
-  .nav-welcome { width: 100%; text-align: left; padding: .75rem; margin-bottom: .75rem; font-weight: 700; font-size: .85rem; text-transform: uppercase; color: #fff; background: transparent; border: 1px solid #4338ca; border-radius: .5rem; cursor: pointer; }
-  .nav-welcome:hover { background: #3730a3; }
-  .module-block { margin-bottom: 1rem; }
-  .module-btn { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: .5rem; text-align: left; padding: .75rem; font-weight: 700; font-size: .85rem; text-transform: uppercase; color: #fff; background: #4338ca; border: 0; border-radius: .5rem; cursor: pointer; box-shadow: inset 0 2px 4px rgba(0,0,0,.2); }
-  .module-btn:hover { background: #4f46e5; }
-
-  .content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-  .mobile-header { display: none; background: #312e81; color: #fff; padding: 1rem; align-items: center; }
-  .mobile-header button { background: none; border: 0; color: #fff; font-size: 1.5rem; margin-right: 1rem; cursor: pointer; }
-  .mobile-header span { font-weight: 700; }
-  #main-content { flex: 1; overflow-y: auto; padding: 3rem; background: #fff; }
-
-  .content-section { display: none; max-width: 56rem; margin: 0 auto; }
-  .content-section.active { display: block; animation: fadeIn .3s ease-in; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-  .page-title { font-size: 1.9rem; font-weight: 900; margin: 0 0 1.5rem; padding-bottom: .5rem; color: #312e81; border-bottom: 4px solid #4f46e5; text-transform: uppercase; letter-spacing: -.01em; }
-  .welcome-box { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 1.5rem; padding: 2.5rem; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-  .welcome-box .subtitle { font-size: 1.25rem; font-weight: 500; font-style: italic; color: #1e3a8a; margin: 0 0 1.5rem; }
-  .welcome-box .welcome-text { color: #1e40af; margin: 0; line-height: 1.7; white-space: pre-wrap; }
-  .module-head { margin-bottom: 2.5rem; }
-  .module-title { margin: 0; font-size: 1.9rem; font-weight: 900; color: #1e1b4b; text-transform: uppercase; letter-spacing: -.03em; }
-  .module-desc { display: inline-block; margin-top: .5rem; padding: .25rem 1rem; border-radius: 999px; font-weight: 700; color: #4338ca; background: #e0e7ff; }
-  .lessons { display: flex; flex-direction: column; gap: 1.5rem; }
-
-  details.lesson { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.5rem; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
-  details.lesson summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem; cursor: pointer; background: #f1f5f9; }
-  details.lesson summary::-webkit-details-marker { display: none; }
-  details.lesson summary:hover { background: #e2e8f0; }
-  details.lesson summary h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #312e81; }
-  .chev { color: #312e81; transition: transform .3s; flex-shrink: 0; }
-  details[open] > summary .chev { transform: rotate(180deg); }
-  .lesson-body { padding: 1rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-  .lesson-content { color: #334155; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .inline-link { color: #4338ca; text-decoration: underline; }
-
-  .links { padding-top: 1rem; border-top: 1px solid #e2e8f0; }
-  .links-title, .resource-title { display: block; margin-bottom: .6rem; font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: #312e81; }
-  .links-list { display: flex; flex-wrap: wrap; gap: .5rem; }
-  .link-btn { display: inline-block; padding: .45rem .9rem; font-size: .85rem; color: #4338ca; background: #e0e7ff; border: 1px solid #c7d2fe; border-radius: .5rem; text-decoration: none; overflow-wrap: anywhere; }
-  .link-btn:hover { background: #c7d2fe; }
-
-  .resource { padding-top: 1rem; border-top: 1px solid #e2e8f0; }
-  .resource-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .5rem; }
-  .resource-title { margin: 0; }
-  .resource-name { text-transform: none; letter-spacing: 0; font-weight: 600; color: #475569; overflow-wrap: anywhere; }
-  .resource-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .btn { display: inline-block; font-size: .75rem; padding: .4rem .8rem; color: #fff; background: #4f46e5; border-radius: .25rem; text-decoration: none; }
-  .btn:hover { background: #4338ca; }
-  .pdf-wrap { width: 100%; height: 70vh; min-height: 420px; border: 1px solid #cbd5e1; border-radius: .75rem; overflow: hidden; background: #fff; }
-  .pdf-frame { display: block; width: 100%; height: 100%; border: 0; }
-  .note { margin: .5rem 0 0; font-size: .8rem; color: #64748b; }
-
-  @media (max-width: 1023px) {
-    #sidebar { position: fixed; top: 0; bottom: 0; left: 0; transform: translateX(-100%); transition: transform .3s; }
-    #sidebar.open { transform: none; }
-    .close-btn { display: block; }
-    .mobile-header { display: flex; }
-    #main-content { padding: 1.5rem; }
-    .lesson-body { padding: 1rem 1.25rem 1.5rem; }
-    .welcome-box { padding: 1.5rem; }
-  }
-</style>
-</head>
-<body>
-  <div id="overlay" onclick="toggleSidebar()"></div>
-
-  <aside id="sidebar">
-    <div class="sidebar-head">
-      <h1 id="sidebar-course-title">Curso</h1>
-      <button class="close-btn" onclick="toggleSidebar()">✕</button>
-    </div>
-    <div class="lang-row">
-      <span id="lang-label">Idioma:</span>
-      <select id="langSelect" onchange="changeLanguage(this.value)">
-        <option value="es">Español</option>
-        <option value="en">English</option>
-        <option value="de">Deutsch</option>
-      </select>
-    </div>
-    <nav id="nav-container"></nav>
-  </aside>
-
-  <div class="content-col">
-    <header class="mobile-header">
-      <button onclick="toggleSidebar()">☰</button>
-      <span id="header-course-title">Dashboard</span>
-    </header>
-    <main id="main-content"></main>
-  </div>
-
-<script>
-const course = {"default_language": "es", "course_title": {"es": "Curso de inteligencia artificial", "en": "Artificial intelligence course.", "de": "KI-Kurs."}, "course_subtitle": {"es": "Herramientas prácticas para el día a día.", "en": "Practical tools for everyday use.", "de": "Praktische Werkzeuge für den Alltag."}, "modules": [{"title": {"es": "Módulo 1. Conocimientos básicos: Fundamentos y técnicas de prompting.", "en": "Module 1. Basic Knowledge: Fundamentals and techniques of prompting.", "de": "Modul 1. Grundlagen: Konzepte und Techniken des Prompts."}, "description": {"es": "", "en": "", "de": ""}, "lessons": [{"title": {"es": "1. Terminología y desarrollo tecnológico.", "en": "1. Terminology and technological development.", "de": "1. Terminologie und technologischer Fortschritt."}, "content": {"es": "Conocimientos básicos (Nivel inicial)\nFundamentos y terminología en contexto: IA, ML, DL, IA Generativa (GenAI), embeddings/vectores, diferentes plataformas (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nProporciona los fundamentos de manera práctica. Incluye aprendizaje automático, aprendizaje profundo, IA generativa y terminología general de la IA para personas sin conocimientos técnicos previos.\nConocimientos básicos (Nivel inicial)", "en": "Basic Knowledge (Beginner Level)\nFundamentals and terminology in context: AI, ML, DL, Generative AI (GenAI), embeddings/vectors, various platforms (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nProvides the fundamentals in a practical way. Includes machine learning, deep learning, generative AI, and general AI terminology for people with no prior technical knowledge.\nBasic Knowledge (Beginner Level)", "de": "Grundlegende Kenntnisse (Anfängerniveau)\nGrundlagen und Terminologie im Kontext: KI, ML, DL, generative KI (GenAI), Embeddings/Vektoren, verschiedene Plattformen (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nVermittelt die Grundlagen auf praktische Weise. Beinhaltet maschinelles Lernen, Deep Learning, generative KI und allgemeine KI-Terminologie für Personen ohne Vorkenntnisse.\nGrundlegende Kenntnisse (Anfängerniveau)"}, "resource": "", "resource_filename": "", "links": {"de": "", "en": "", "es": ""}}, {"title": {"de": "2. Arten von Modellen (LLM, LMM, SLM)", "en": "2. Types of models (LLM, LMM, SLM)", "es": "2. Tipos de modelos (LLM, LMM, SLM)"}, "content": {"de": "Verwendung der Modelle von GenAI: Große Sprachmodelle, große multimodale Modelle, kleine Sprachmodelle. Übungen: Text-zu-Text, Text-zu-Bild, Bild-zu-Text.", "en": "Using GenAI models: Large Language Models, Large Multi-Modal Models, Small Language Models. Exercises: text-to-text, text-to-image, image-to-text.", "es": "Usando los modelos de la GenAI:Large Language Models, Large Multi-Modal Models, Small Language Models. Ejercicios: texto a texto, texto a imagen, imagen a texto"}, "resource": "", "resource_filename": "", "links": {"es": "", "de": ""}}, {"title": {"de": "3. Steuerung durch Anweisungen: Prompting.", "en": "3. Control via instructions: Prompting.", "es": "3. Control mediante instrucciones: Prompting."}, "content": {"de": "Übergang von der klassischen Logik von Suchmaschinen zu ergebnisorientierten Anweisungen mithilfe des RTCF-Frameworks und anderer Prompting-Techniken.", "en": "Transition from the classical logic of search engines to result-oriented instructions using the RTCF framework and other prompting techniques.", "es": "Transición de la lógica clásica de los motores de búsqueda a instrucciones orientadas a resultados mediante el framework RTCF y otras técnicas de prompting."}, "resource": "", "resource_filename": "", "links": {"es": "", "en": "", "de": ""}}, {"title": {"es": "4. Aspectos de Ciberseguridad", "en": "4. Cybersecurity Aspects", "de": "4. Aspekte der Cybersicherheit."}, "content": {"es": "Algunos aspectos de cómo prevenir riesgos cibernéticos cuando se usa la GenAI", "en": "Some aspects of how to prevent cyber risks when using Generative AI.", "de": "Einige Aspekte, wie man Cyberrisiken bei der Verwendung von generativer Künstlicher Intelligenz (GenAI) vermeiden kann."}, "links": {"es": "", "de": ""}, "resource": "", "resource_filename": ""}]}, {"title": {"de": "Modul 2. Mittelstufe: Werkzeuge in der KI.", "en": "Module 2. Intermediate Level: Tools in AI.", "es": "Módulo 2. Nivel intermedio: Herramientas en la IA."}, "description": {"de": "", "es": "", "en": ""}, "lessons": [{"title": {"de": "5. Strukturierte Arbeit mit Dokumenten (ähnlich wie Canvas).", "en": "5. Structured work with documents (Canvas and similar platforms).", "es": "5. Trabajo estructurado con documentos (Canvas y similares)."}, "content": {"de": "Vergleichende Edition (Funktionsweise und gezielte Modifikation), Format und Struktur (Strukturierung und Versionskontrolle), Verwendung interaktiver Arbeitsumgebungen für die Erstellung, die parallele Bearbeitung und die Überprüfung von Texten.", "en": "Comparative Editing (Operation and Targeted Modification), Format and Structure (Structuring and Version Control), Use of interactive work environments for text creation, parallel editing, and review.", "es": "Edición Comparada (Funcionamiento y Modificación Dirigida), Formato y Estructura (Estructuración y Control de Versiones), Uso de entornos de trabajo interactivos para la creación, la edición paralela y la revisión de textos."}, "resource": "", "resource_filename": "", "links": {"es": ""}}, {"title": {"de": "6. Analysieren Sie eigene Dokumente und Daten.", "en": "6. Analyze internal documents and data.", "es": "6. Analizar documentos y datos propios."}, "content": {"de": "Parallele Bearbeitung (Funktionsweise und spezifische Modifikationen)* 2. Format und Struktur (Strukturierung und Versionskontrolle)\nEinsatz von interaktiven Arbeitsumgebungen für die effiziente Erstellung, die parallele Bearbeitung und die Überprüfung komplexer Texte.", "en": "Parallel Edition (Operation and Specific Modification)* 2. Format and Structure (Structuring and Version Control)\nUse of interactive work environments for efficient creation, parallel editing, and review of complex texts.", "es": "Edición Paralela (Funcionamiento y Modificación Específica)* 2. Formato y Estructura (Estructuración y Control de Versiones)\nUso de entornos de trabajo interactivos para la creación eficiente, la edición paralela y la revisión de textos complejos."}, "resource": "", "resource_filename": "", "links": {"es": ""}}, {"title": {"de": "7. Fokus auf Notizen und Dokumente (Gemini als Beispiel)", "en": "7. Focus on notebooks and documents (Gemini as an example).", "es": "7.  Enfoque en cuadernos y documentos (Gemini como ejemplo)"}, "content": {"de": "Gemini Notebook & Fokus auf Dokumente (Integration von Informationen und antworten basierend auf Beweisen), Extraktion und Synthese, wobei ein etwas höherer Grad an Sicherheit mit kontrolliertem Inhalt gewährleistet wird (Retrieval Augmented Generation - RAG), zusätzliche Tools sind in diesem Werkzeug enthalten. Es wird auch auf andere Tools wie \"Notebook in Copilot\" hingewiesen.", "en": "Gemini Notebook & Document Focus (Information integration and evidence-based responses), Extraction and Synthesis, working with increased security for contained content (Retrieval Augmented Generation - RAG), with additional tools included in this tool. Other tools, such as Notebook in Copilot, are also mentioned.", "es": "Gemini Notebook & Enfoque en Documentos (Integración de información y respuestas basadas en evidencia), Extracción y Síntesis, trabajando con un poco más de seguridad con contenido contenido (Generación Aumentada por Recuperación (Retrieval Augmented Generation -RAG), herramientas adicionales incluidas en esta herramienta. Se hace mención a otras como Notebook en Copilot"}, "resource": "", "resource_filename": "", "links": {"es": ""}}]}, {"title": {"de": "Modul 3. Fortgeschrittenes Niveau: Erstellung von KI-Agenten.", "en": "Module 3. Advanced Level: Creating Artificial Intelligence Agents.", "es": "Módulo 3. Nivel avanzado: Creación de agentes de inteligencia artificial."}, "description": {"de": ""}, "lessons": [{"title": {"de": "8. Von der Konversation zum Prozessautomatisierer (Permanente Anleitungen und schrittweise Logik).", "en": "8. From conversation to process automation (Permanent instructions and step-by-step logic).", "es": "8. De la conversación al automatizador de procesos (Instrucciones permanentes y lógica paso a paso)."}, "content": {"de": "Der spezialisierte Agent (Wissensbasis und strukturierte Ausgabesteuerung).\nKonfiguration eigener KI-Agenten (als \"Module\" oder \"Kompetenzen\"), die komplexe Denkprozesse autonom ausführen und dabei eine vordefinierte Logik befolgen.", "en": "The specialized agent (knowledge base and structured output control).\nConfiguration of proprietary AI agents (such as \"gems\" or \"skills\") to autonomously perform complex thought processes, following a predefined logic.", "es": "El agente especializado (base de conocimientos y control estructurado de la salida).\nConfiguración de agentes de IA propios (como \"gems\" o \"skills\") para que realicen de forma autónoma procesos de pensamiento complejos, siguiendo una lógica predefinida."}, "resource": "", "resource_filename": "", "links": {"es": ""}}, {"title": {"de": "9. Einführung: Agentenbasierte Künstliche Intelligenz.", "en": "9. Introduction: Agent-Based Artificial Intelligence", "es": "9. Introducción: Inteligencia Artificial Agéntica"}, "content": {"de": "Diese Sitzung ist sehr kurz und dient lediglich dazu, die Definition und einige grundlegende Konzepte vorzustellen.", "en": "This session is very short; it is only to present the definition and some basic concepts.", "es": "Esta sesión es de muy corta duración es solo para presetnar la deficnición y algunos conceptos básicos"}, "resource": "", "resource_filename": "", "links": {"es": ""}}]}, {"title": {"de": "Modul 4: Optional: Ethische und gesellschaftliche Diskussionen.", "en": "Module 4. Optional: Ethical and social debates.", "es": "Módulo 4. Opcional: Debates éticos y sociales."}, "description": {"de": "", "es": "", "en": ""}, "lessons": [{"title": {"de": "Diskussionen: Die Wirkungen der Künstlichen Intelligenz", "en": "Discussions: The Impact of Artificial Intelligence", "es": "Discusiones: El impacto de la Inteligencia Artificial"}, "content": {"de": "Dieser Raum ist konzipiert, um Themen wie die sozialen Herausforderungen des KI-Einsatzes, digitale Ausgrenzung, Kommunikationsschwierigkeiten, Arbeitsplatzverlust, KI-gestützte Kontrolle, kulturelle Kontrolle durch KI usw. sowie den Verbrauch von Wasser, Energie, Raum und Zeit zu diskutieren.", "en": "This space is designed to discuss topics such as the social challenges of AI usage, digital exclusion, communication difficulties, job displacement, AI-driven control, cultural control by AI, etc., as well as the consumption of water, energy, space, and time, among others", "es": "Este espacio está concebido para discutir temas como los retos sociales del uso de la IA, la exclusión digital, las dificultades de comunicación, la pérdida de empleo, el control por parte de la IA, el control cultural a través de la IA, etc., así como el consumo de agua, energía, espacio y tiempo, entre otros."}, "links": {"de": "", "en": "", "es": ""}, "resource": "", "resource_filename": ""}]}, {"title": {"es": "Materiales y Actividades", "en": "Materials and Activities.", "de": "Materialien und Aktivitäten."}, "description": {"es": "Materiales presentados durante el curso y actividades extras voluntarias para realizar por fuera del tiempo de la clase", "en": "Materials presented during the course and optional extra activities to be completed outside of class time.", "de": "Materialien, die während des Kurses präsentiert wurden, und zusätzliche, freiwillige Aktivitäten, die außerhalb der Kurszeiten bearbeitet werden können."}, "lessons": [{"title": {"es": "Material del curso", "en": "Course materials.", "de": "Kursmaterialien"}, "content": {"es": "Contenido de la lección.", "en": "Lesson content.", "de": "Inhalt der Lektion."}, "links": {"es": "", "en": "", "de": ""}, "resource": "C:/Users/upega/Mis_proyectos_python/crear_html/mis archivos/recursos/IA_en_salud_colegas_CES.pdf", "resource_filename": "recursos/IA_en_salud_colegas_CES.pdf"}, {"title": {"es": "Actividades voluntarias", "en": "Volunteer activities.", "de": "Freiwilligenaktivitäten."}, "content": {"es": "Actividades extras, voluntarias, para practicar aspectos explicados en el curso", "en": "Additional, optional activities to practice concepts covered in the course.", "de": "Zusätzliche, freiwillige Aktivitäten, um Aspekte zu vertiefen, die im Kurs behandelt wurden."}, "links": {"es": "", "de": ""}, "resource": "", "resource_filename": ""}, {"title": {"es": "LInks de interés", "en": "Links of interest", "de": "Interessante Links."}, "content": {"es": "Otros links de interés", "en": "Other links of interest.", "de": "Weitere interessante Links:"}, "links": {"es": ""}, "resource": "", "resource_filename": ""}]}, {"title": {"es": "Acerca de mi", "en": "About me", "de": "Über mich"}, "description": {"es": "", "en": "", "de": ""}, "lessons": [{"title": {"es": "En Linkedin", "en": "On LinkedIn.", "de": "Auf LinkedIn."}, "content": {"es": "<div style=\"text-align: center; margin-bottom: 20px;\">\n  <a href=\"https://www.linkedin.com/in/hectorupegui\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class=\"badge-base LI-profile-badge\" data-locale=\"es_ES\" data-size=\"large\" data-theme=\"light\" data-type=\"VERTICAL\" data-vanity=\"hectorupegui\" data-version=\"v1\"><\/div>\n\n<script src=\"https://platform.linkedin.com/badges/js/profile.js\" async defer type=\"text/javascript\"><\/script>", "de": "<div style=\"text-align: center; margin-bottom: 20px;\">\n  <a href=\"https://www.linkedin.com/in/hectorupegui\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class=\"badge-base LI-profile-badge\" data-locale=\"es_ES\" data-size=\"large\" data-theme=\"light\" data-type=\"VERTICAL\" data-vanity=\"hectorupegui\" data-version=\"v1\"><\/div>\n\n<script src=\"https://platform.linkedin.com/badges/js/profile.js\" async defer type=\"text/javascript\"><\/script>", "en": "<div style=\"text-align: center; margin-bottom: 20px;\">\n  <a href=\"https://www.linkedin.com/in/hectorupegui\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class=\"badge-base LI-profile-badge\" data-locale=\"es_ES\" data-size=\"large\" data-theme=\"light\" data-type=\"VERTICAL\" data-vanity=\"hectorupegui\" data-version=\"v1\"><\/div>\n\n<script src=\"https://platform.linkedin.com/badges/js/profile.js\" async defer type=\"text/javascript\"><\/script>"}, "links": {"es": "", "en": "", "de": ""}, "resource": "", "resource_filename": ""}]}], "course_welcome": {"es": "¡Bienvenido/a a la formación de IA para el trabajo y la vida diaria!\n\nPor favor, utilice el menú de la izquierda para ver los contenidos de cada sesión.\n\nEn este curso conocerá el funcionamiento y las posibilidades de aplicación de las herramientas de IA en la oficina y la vida diaria. Aprenderá a identificar las herramientas adecuadas para sus tareas, optimizar flujos de trabajo y tener en cuenta los aspectos necesarios de protección de datos.\n\nNota sobre la agenda: Los contenidos del curso se tratarán según lo descrito. Sin embargo, tenga en cuenta que el orden o el peso temporal de los temas pueden ajustarse ligeramente para mejorar el éxito del aprendizaje y debido al desarrollo dinámico de las herramientas de IA.\n\nEl desarrollo en el campo de la Inteligencia Artificial es extremadamente dinámico. Lo que ayer se consideraba un estándar, hoy puede haber quedado obsoleto debido a nuevas actualizaciones o herramientas. He hecho todo lo posible por mantener toda la información lo más actualizada y precisa posible; sin embargo, no asumo ninguna responsabilidad por la validez permanente de las funciones o condiciones mostradas.\n\nPara la creación de este material se utilizó IA con el fin de garantizar un flujo editorial profesional; sin embargo, el contenido sigue siendo 100% de autoría humana, reflejando la investigación original y el diseño pedagógico del autor.", "en": "Welcome to the AI training for work and daily life!\n\nPlease use the menu on the left to view the contents of each session.\n\nIn this course, you will learn how AI tools work and their application possibilities in the office and daily life. You will learn how to identify the right tools for your tasks, optimize workflows, and consider the necessary data protection aspects.\n\nNote on the agenda: The course content will be covered as described. However, please note that the order or the temporal weighting of the topics may be adjusted slightly to improve learning success and due to the dynamic development of AI tools.\n\nDevelopment in the field of Artificial Intelligence is extremely dynamic. What was considered a standard yesterday may now be obsolete due to new updates or tools. I have done my best to keep all the information as up-to-date and accurate as possible; however, I assume no responsibility for the permanent validity of the functions or conditions shown.\n\nAI was used in the creation of this material to ensure a professional editorial flow; however, the content remains 100% human-authored, reflecting the original research and pedagogical design of the author.", "de": "Willkommen zum KI-Training für Arbeit und Alltag!\n\nBitte verwenden Sie das Menü auf der linken Seite, um die Inhalte jeder Sitzung anzuzeigen.\n\nIn diesem Kurs lernen Sie die Funktionsweise und die Anwendungsmöglichkeiten von KI-Tools im Büro und im Alltag kennen. Sie lernen, die richtigen Tools für Ihre Aufgaben zu identifizieren, Arbeitsabläufe zu optimieren und die notwendigen Aspekte des Datenschutzes zu berücksichtigen.\n\nHinweis zum Programm: Die Inhalte des Kurses werden gemäß der Beschreibung behandelt. Bitte beachten Sie jedoch, dass die Reihenfolge oder die zeitliche Gewichtung der Themen leicht angepasst werden können, um den Lernerfolg zu verbessern und aufgrund der dynamischen Entwicklung der KI-Tools.\n\nDie Entwicklung im Bereich der Künstlichen Intelligenz ist extrem dynamisch. Was gestern noch als Standard galt, kann heute aufgrund neuer Updates oder Tools veraltet sein. Ich habe mein Bestes getan, um alle Informationen so aktuell und genau wie möglich zu halten; ich übernehme jedoch keine Verantwortung für die dauerhafte Gültigkeit der dargestellten Funktionen oder Bedingungen.\n\nBei der Erstellung dieses Materials wurde KI eingesetzt, um einen professionellen redaktionellen Ablauf zu gewährleisten; der Inhalt ist jedoch zu 100 % von menschlicher Urheberschaft, der die ursprüngliche Forschung und das pädagogische Design des Autors widerspiegelt."}};
-let currentLang = course.default_language || "es";
-let activeSection = "welcome-section";
-document.getElementById("langSelect").value = currentLang;
-
-const I18N = {
-  es: {
-    lang: "Idioma:", welcome: "bienvenido",
-    resources: "Recursos adjuntos", open: "Abrir / Pantalla completa",
-    download: "Descargar", links: "Enlaces",
-    pdfNote: "Si el PDF no se muestra aquí, ábrelo o descárgalo con los botones.",
-    fileNote: "Este tipo de archivo no se puede previsualizar. Descárgalo para abrirlo.",
-    module: "Módulo", lesson: "Lección"
-  },
-  en: {
-    lang: "Language:", welcome: "welcome",
-    resources: "Attached resources", open: "Open / Fullscreen",
-    download: "Download", links: "Links",
-    pdfNote: "If the PDF is not displayed here, open or download it with the buttons.",
-    fileNote: "This file type cannot be previewed. Download it to open it.",
-    module: "Module", lesson: "Lesson"
-  },
-  de: {
-    lang: "Sprache:", welcome: "willkommen",
-    resources: "Anhänge", open: "Öffnen / Vollbild",
-    download: "Herunterladen", links: "Links",
-    pdfNote: "Wird das PDF hier nicht angezeigt, öffnen oder laden Sie es mit den Schaltflächen herunter.",
-    fileNote: "Dieser Dateityp kann nicht als Vorschau angezeigt werden. Zum Öffnen herunterladen.",
-    module: "Modul", lesson: "Lektion"
-  }
-};
-
-function pick(d, lang, fallback) {
-  fallback = fallback || "";
-  if (!d) return fallback;
-  if (d[lang]) return d[lang];
-  for (const l of ["es", "en", "de"]) { if (d[l]) return d[l]; }
-  return fallback;
-}
-
-function esc(s) {
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-function renderRichText(raw) {
-  const trimmed = (raw || "").trim();
-  // Si el usuario escribe código HTML explícito (ej. empieza con <script o <div), lo inyectamos directamente
-  if (trimmed.startsWith("<")) {
-    return raw;
-  }
-  const re = /https?:\/\/[^\s<>"']+/g;
-  let out = "", last = 0, m;
-  while ((m = re.exec(raw)) !== null) {
-    let url = m[0], extra = "";
-    const trail = url.match(/[.,;:!?)\]]+$/);
-    if (trail) { extra = trail[0]; url = url.slice(0, url.length - extra.length); }
-    out += esc(raw.slice(last, m.index));
-    out += '<a class="inline-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + "</a>" + esc(extra);
-    last = m.index + m[0].length;
-  }
-  return out + esc(raw.slice(last));
-}
-
-function normalizeUrl(u) {
-  u = (u || "").trim();
-  if (!u) return null;
-  if (/^www\./i.test(u)) return "https://" + u;
-  const m = u.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
-  if (m) {
-    const s = m[1].toLowerCase();
-    return (s === "http" || s === "https" || s === "mailto") ? u : null;
-  }
-  return "https://" + u;
-}
-
-function parseLinks(raw) {
-  const result = [];
-  (raw || "").split(/\r?\n/).forEach(function (line) {
-    line = line.trim();
-    if (!line) return;
-    let label = "", url = line;
-    if (!/^(https?:\/\/|mailto:|www\.)/i.test(line) && line.indexOf("|") !== -1) {
-      const idx = line.indexOf("|");
-      label = line.slice(0, idx).trim();
-      url = line.slice(idx + 1).trim();
-    }
-    const href = normalizeUrl(url);
-    if (!href) return;
-    result.push({ label: label || url, href: href });
-  });
-  return result;
-}
-
-function resourceUrl(path) {
-  return path.split("/").map(encodeURIComponent).join("/");
-}
-
-function renderResource(path, t) {
-  if (!path) return "";
-  const url = resourceUrl(path);
-  const name = path.split("/").pop();
-  const isPdf = /\.pdf$/i.test(name);
-  let html = '<div class="resource"><div class="resource-head">' +
-    '<span class="resource-title">📎 ' + esc(t.resources) + ': <span class="resource-name">' + esc(name) + '</span></span>' +
-    '<span class="resource-actions">' +
-    (isPdf ? '<a class="btn" href="' + url + '" target="_blank" rel="noopener">' + esc(t.open) + '</a>' : '') +
-    '<a class="btn" href="' + url + '" download="' + esc(name) + '">' + esc(t.download) + '</a>' +
-    '</span></div>';
-  if (isPdf) {
-    html += '<div class="pdf-wrap"><iframe class="pdf-frame" src="' + url + '" title="' + esc(name) + '" loading="lazy"></iframe></div>' +
-      '<p class="note">' + esc(t.pdfNote) + '</p>';
-  } else {
-    html += '<p class="note">' + esc(t.fileNote) + '</p>';
-  }
-  return html + "</div>";
-}
-
-function changeLanguage(lang) {
-  currentLang = lang;
-  buildUI();
-}
-
-function toggleSidebar() {
-  document.getElementById("sidebar").classList.toggle("open");
-  document.getElementById("overlay").classList.toggle("show");
-}
-
-function showSection(id) {
-  activeSection = id;
-  document.querySelectorAll(".content-section").forEach(function (s) { s.classList.remove("active"); });
-  const target = document.getElementById(id);
-  if (target) {
-    target.classList.add("active");
-    // Ejecuta cualquier etiqueta <script> interna (como widgets de LinkedIn)
-    target.querySelectorAll("script").forEach(function(oldScript) {
-      const newScript = document.createElement("script");
-      Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-      newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-      oldScript.parentNode.replaceChild(newScript, oldScript);
-    });
-  }
-  if (window.innerWidth < 1024) {
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("overlay").classList.remove("show");
-  }
-  document.getElementById("main-content").scrollTop = 0;
-}
-
-function buildUI() {
-  const t = I18N[currentLang] || I18N.es;
-  document.documentElement.lang = currentLang;
-  document.getElementById("lang-label").textContent = t.lang;
-
-  const titleText = pick(course.course_title, currentLang, "Curso");
-  const subtitleText = pick(course.course_subtitle, currentLang, "");
-  const welcomeText = pick(course.course_welcome, currentLang, "");
-  document.title = titleText;
-  document.getElementById("sidebar-course-title").textContent = titleText;
-  document.getElementById("header-course-title").textContent = titleText;
-
-  let navHTML = '<button class="nav-welcome" onclick="showSection(\'welcome-section\')">📢 ' + esc(t.welcome) + '</button>';
-
-  let mainHTML = '<article id="welcome-section" class="content-section">' +
-    '<h2 class="page-title">' + esc(titleText) + '</h2>' +
-    '<div class="welcome-box"><p class="subtitle">' + esc(subtitleText) + '</p>' +
-    '<div class="welcome-text">' + renderRichText(welcomeText) + '</div></div></article>';
-
-  (course.modules || []).forEach(function (module, mIdx) {
-    const sectionId = "module-section-" + mIdx;
-    const modTitle = pick(module.title, currentLang, t.module);
-    const modDesc = pick(module.description, currentLang, "");
-
-    navHTML += '<div class="module-block">' +
-      '<button class="module-btn" onclick="showSection(\'' + sectionId + '\')">' +
-      '<span>📅 ' + esc(modTitle) + '</span>' +
-      '</button></div>';
-
-    mainHTML += '<article id="' + sectionId + '" class="content-section">' +
-      '<div class="module-head"><h2 class="module-title">' + esc(modTitle) + '</h2>' +
-      (modDesc ? '<div class="module-desc">' + esc(modDesc) + '</div>' : '') +
-      '</div><div class="lessons">';
-
-    (module.lessons || []).forEach(function (lesson, lIdx) {
-      const lesTitle = pick(lesson.title, currentLang, t.lesson);
-      const lesContent = pick(lesson.content, currentLang, "");
-      const links = parseLinks(pick(lesson.links, currentLang, ""));
-
-      let linksHTML = "";
-      if (links.length) {
-        linksHTML = '<div class="links"><span class="links-title">🔗 ' + esc(t.links) + '</span><div class="links-list">' +
-          links.map(function (l) {
-            return '<a class="link-btn" href="' + esc(l.href) + '" target="_blank" rel="noopener noreferrer">' + esc(l.label) + '</a>';
-          }).join("") + '</div></div>';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard del Curso</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Arial,
+          sans-serif;
+        background: #f9fafb;
+        color: #1f2937;
       }
 
-      mainHTML += '<details class="lesson"' + (lIdx === 0 ? " open" : "") + '>' +
-        '<summary><h3>' + esc(lesTitle) + '</h3>' +
-        '<svg class="chev" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>' +
-        '</summary><div class="lesson-body">' +
-        '<div class="lesson-content">' + renderRichText(lesContent) + '</div>' +
-        linksHTML +
-        renderResource(lesson.resource_filename || "", t) +
-        '</div></details>';
-    });
+      #overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+      }
+      #overlay.show {
+        display: block;
+      }
 
-    mainHTML += "</div></article>";
-  });
+      #sidebar {
+        width: 18rem;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        background: #312e81;
+        color: #fff;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        z-index: 50;
+      }
+      .sidebar-head {
+        padding: 1.5rem;
+        border-bottom: 1px solid #3730a3;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      #sidebar-course-title {
+        margin: 0;
+        font-size: 1.1rem;
+        line-height: 1.25;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .close-btn {
+        display: none;
+        background: none;
+        border: 0;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+      .lang-row {
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid #3730a3;
+        background: #1e1b4b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .lang-row span {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        color: #a5b4fc;
+      }
+      #langSelect {
+        background: #3730a3;
+        color: #fff;
+        font-size: 0.85rem;
+        border-radius: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        border: 1px solid #4338ca;
+        outline: none;
+      }
+      #nav-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
 
-  document.getElementById("nav-container").innerHTML = navHTML;
-  document.getElementById("main-content").innerHTML = mainHTML;
+      .nav-welcome {
+        width: 100%;
+        text-align: left;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #fff;
+        background: transparent;
+        border: 1px solid #4338ca;
+        border-radius: 0.5rem;
+        cursor: pointer;
+      }
+      .nav-welcome:hover {
+        background: #3730a3;
+      }
+      .module-block {
+        margin-bottom: 1rem;
+      }
+      .module-btn {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        text-align: left;
+        padding: 0.75rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #fff;
+        background: #4338ca;
+        border: 0;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .module-btn:hover {
+        background: #4f46e5;
+      }
 
-  const target = document.getElementById(activeSection) || document.getElementById("welcome-section");
-  activeSection = target.id;
-  target.classList.add("active");
-}
+      .content-col {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .mobile-header {
+        display: none;
+        background: #312e81;
+        color: #fff;
+        padding: 1rem;
+        align-items: center;
+      }
+      .mobile-header button {
+        background: none;
+        border: 0;
+        color: #fff;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        cursor: pointer;
+      }
+      .mobile-header span {
+        font-weight: 700;
+      }
+      #main-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 3rem;
+        background: #fff;
+      }
 
-buildUI();
-</script>
-</body>
+      .content-section {
+        display: none;
+        max-width: 56rem;
+        margin: 0 auto;
+      }
+      .content-section.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .page-title {
+        font-size: 1.9rem;
+        font-weight: 900;
+        margin: 0 0 1.5rem;
+        padding-bottom: 0.5rem;
+        color: #312e81;
+        border-bottom: 4px solid #4f46e5;
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+      }
+      .welcome-box {
+        background: #eff6ff;
+        border: 1px solid #dbeafe;
+        border-radius: 1.5rem;
+        padding: 2.5rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+      .welcome-box .subtitle {
+        font-size: 1.25rem;
+        font-weight: 500;
+        font-style: italic;
+        color: #1e3a8a;
+        margin: 0 0 1.5rem;
+      }
+      .welcome-box .welcome-text {
+        color: #1e40af;
+        margin: 0;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+      .module-head {
+        margin-bottom: 2.5rem;
+      }
+      .module-title {
+        margin: 0;
+        font-size: 1.9rem;
+        font-weight: 900;
+        color: #1e1b4b;
+        text-transform: uppercase;
+        letter-spacing: -0.03em;
+      }
+      .module-desc {
+        display: inline-block;
+        margin-top: 0.5rem;
+        padding: 0.25rem 1rem;
+        border-radius: 999px;
+        font-weight: 700;
+        color: #4338ca;
+        background: #e0e7ff;
+      }
+      .lessons {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      details.lesson {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+      details.lesson summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        background: #f1f5f9;
+      }
+      details.lesson summary::-webkit-details-marker {
+        display: none;
+      }
+      details.lesson summary:hover {
+        background: #e2e8f0;
+      }
+      details.lesson summary h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #312e81;
+      }
+      .chev {
+        color: #312e81;
+        transition: transform 0.3s;
+        flex-shrink: 0;
+      }
+      details[open] > summary .chev {
+        transform: rotate(180deg);
+      }
+      .lesson-body {
+        padding: 1rem 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .lesson-content {
+        color: #334155;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .inline-link {
+        color: #4338ca;
+        text-decoration: underline;
+      }
+
+      .links {
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+      }
+      .links-title,
+      .resource-title {
+        display: block;
+        margin-bottom: 0.6rem;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #312e81;
+      }
+      .links-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .link-btn {
+        display: inline-block;
+        padding: 0.45rem 0.9rem;
+        font-size: 0.85rem;
+        color: #4338ca;
+        background: #e0e7ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+      }
+      .link-btn:hover {
+        background: #c7d2fe;
+      }
+
+      .resource {
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+      }
+      .resource-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .resource-title {
+        margin: 0;
+      }
+      .resource-name {
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 600;
+        color: #475569;
+        overflow-wrap: anywhere;
+      }
+      .resource-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 0.4rem 0.8rem;
+        color: #fff;
+        background: #4f46e5;
+        border-radius: 0.25rem;
+        text-decoration: none;
+      }
+      .btn:hover {
+        background: #4338ca;
+      }
+      .pdf-wrap {
+        width: 100%;
+        height: 70vh;
+        min-height: 420px;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background: #fff;
+      }
+      .pdf-frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .note {
+        margin: 0.5rem 0 0;
+        font-size: 0.8rem;
+        color: #64748b;
+      }
+
+      @media (max-width: 1023px) {
+        #sidebar {
+          position: fixed;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          transform: translateX(-100%);
+          transition: transform 0.3s;
+        }
+        #sidebar.open {
+          transform: none;
+        }
+        .close-btn {
+          display: block;
+        }
+        .mobile-header {
+          display: flex;
+        }
+        #main-content {
+          padding: 1.5rem;
+        }
+        .lesson-body {
+          padding: 1rem 1.25rem 1.5rem;
+        }
+        .welcome-box {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="overlay" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar">
+      <div class="sidebar-head">
+        <h1 id="sidebar-course-title">Curso</h1>
+        <button class="close-btn" onclick="toggleSidebar()">✕</button>
+      </div>
+      <div class="lang-row">
+        <span id="lang-label">Idioma:</span>
+        <select id="langSelect" onchange="changeLanguage(this.value)">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+      <nav id="nav-container"></nav>
+    </aside>
+
+    <div class="content-col">
+      <header class="mobile-header">
+        <button onclick="toggleSidebar()">☰</button>
+        <span id="header-course-title">Dashboard</span>
+      </header>
+      <main id="main-content"></main>
+    </div>
+
+    <script>
+      const course = {
+        default_language: "es",
+        course_title: {
+          es: "Curso de inteligencia artificial",
+          en: "Artificial intelligence course.",
+          de: "KI-Kurs.",
+        },
+        course_subtitle: {
+          es: "Herramientas prácticas para el día a día.",
+          en: "Practical tools for everyday use.",
+          de: "Praktische Werkzeuge für den Alltag.",
+        },
+        modules: [
+          {
+            title: {
+              es: "Módulo 1. Conocimientos básicos: Fundamentos y técnicas de prompting.",
+              en: "Module 1. Basic Knowledge: Fundamentals and techniques of prompting.",
+              de: "Modul 1. Grundlagen: Konzepte und Techniken des Prompts.",
+            },
+            description: { es: "", en: "", de: "" },
+            lessons: [
+              {
+                title: {
+                  es: "1. Terminología y desarrollo tecnológico.",
+                  en: "1. Terminology and technological development.",
+                  de: "1. Terminologie und technologischer Fortschritt.",
+                },
+                content: {
+                  es: "Conocimientos básicos (Nivel inicial)\nFundamentos y terminología en contexto: IA, ML, DL, IA Generativa (GenAI), embeddings/vectores, diferentes plataformas (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nProporciona los fundamentos de manera práctica. Incluye aprendizaje automático, aprendizaje profundo, IA generativa y terminología general de la IA para personas sin conocimientos técnicos previos.\nConocimientos básicos (Nivel inicial)",
+                  en: "Basic Knowledge (Beginner Level)\nFundamentals and terminology in context: AI, ML, DL, Generative AI (GenAI), embeddings/vectors, various platforms (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nProvides the fundamentals in a practical way. Includes machine learning, deep learning, generative AI, and general AI terminology for people with no prior technical knowledge.\nBasic Knowledge (Beginner Level)",
+                  de: "Grundlegende Kenntnisse (Anfängerniveau)\nGrundlagen und Terminologie im Kontext: KI, ML, DL, generative KI (GenAI), Embeddings/Vektoren, verschiedene Plattformen (Open AI, Microsoft, Google, Mistral, Perplexity, Grok, Deepseek).\n\nVermittelt die Grundlagen auf praktische Weise. Beinhaltet maschinelles Lernen, Deep Learning, generative KI und allgemeine KI-Terminologie für Personen ohne Vorkenntnisse.\nGrundlegende Kenntnisse (Anfängerniveau)",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { de: "", en: "", es: "" },
+              },
+              {
+                title: {
+                  de: "2. Arten von Modellen (LLM, LMM, SLM)",
+                  en: "2. Types of models (LLM, LMM, SLM)",
+                  es: "2. Tipos de modelos (LLM, LMM, SLM)",
+                },
+                content: {
+                  de: "Verwendung der Modelle von GenAI: Große Sprachmodelle, große multimodale Modelle, kleine Sprachmodelle. Übungen: Text-zu-Text, Text-zu-Bild, Bild-zu-Text.",
+                  en: "Using GenAI models: Large Language Models, Large Multi-Modal Models, Small Language Models. Exercises: text-to-text, text-to-image, image-to-text.",
+                  es: "Usando los modelos de la GenAI:Large Language Models, Large Multi-Modal Models, Small Language Models. Ejercicios: texto a texto, texto a imagen, imagen a texto",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "", de: "" },
+              },
+              {
+                title: {
+                  de: "3. Steuerung durch Anweisungen: Prompting.",
+                  en: "3. Control via instructions: Prompting.",
+                  es: "3. Control mediante instrucciones: Prompting.",
+                },
+                content: {
+                  de: "Übergang von der klassischen Logik von Suchmaschinen zu ergebnisorientierten Anweisungen mithilfe des RTCF-Frameworks und anderer Prompting-Techniken.",
+                  en: "Transition from the classical logic of search engines to result-oriented instructions using the RTCF framework and other prompting techniques.",
+                  es: "Transición de la lógica clásica de los motores de búsqueda a instrucciones orientadas a resultados mediante el framework RTCF y otras técnicas de prompting.",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "", en: "", de: "" },
+              },
+              {
+                title: {
+                  es: "4. Aspectos de Ciberseguridad",
+                  en: "4. Cybersecurity Aspects",
+                  de: "4. Aspekte der Cybersicherheit.",
+                },
+                content: {
+                  es: "Algunos aspectos de cómo prevenir riesgos cibernéticos cuando se usa la GenAI",
+                  en: "Some aspects of how to prevent cyber risks when using Generative AI.",
+                  de: "Einige Aspekte, wie man Cyberrisiken bei der Verwendung von generativer Künstlicher Intelligenz (GenAI) vermeiden kann.",
+                },
+                links: { es: "", de: "" },
+                resource: "",
+                resource_filename: "",
+              },
+            ],
+          },
+          {
+            title: {
+              de: "Modul 2. Mittelstufe: Werkzeuge in der KI.",
+              en: "Module 2. Intermediate Level: Tools in AI.",
+              es: "Módulo 2. Nivel intermedio: Herramientas en la IA.",
+            },
+            description: { de: "", es: "", en: "" },
+            lessons: [
+              {
+                title: {
+                  de: "5. Strukturierte Arbeit mit Dokumenten (ähnlich wie Canvas).",
+                  en: "5. Structured work with documents (Canvas and similar platforms).",
+                  es: "5. Trabajo estructurado con documentos (Canvas y similares).",
+                },
+                content: {
+                  de: "Vergleichende Edition (Funktionsweise und gezielte Modifikation), Format und Struktur (Strukturierung und Versionskontrolle), Verwendung interaktiver Arbeitsumgebungen für die Erstellung, die parallele Bearbeitung und die Überprüfung von Texten.",
+                  en: "Comparative Editing (Operation and Targeted Modification), Format and Structure (Structuring and Version Control), Use of interactive work environments for text creation, parallel editing, and review.",
+                  es: "Edición Comparada (Funcionamiento y Modificación Dirigida), Formato y Estructura (Estructuración y Control de Versiones), Uso de entornos de trabajo interactivos para la creación, la edición paralela y la revisión de textos.",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "" },
+              },
+              {
+                title: {
+                  de: "6. Analysieren Sie eigene Dokumente und Daten.",
+                  en: "6. Analyze internal documents and data.",
+                  es: "6. Analizar documentos y datos propios.",
+                },
+                content: {
+                  de: "Parallele Bearbeitung (Funktionsweise und spezifische Modifikationen)* 2. Format und Struktur (Strukturierung und Versionskontrolle)\nEinsatz von interaktiven Arbeitsumgebungen für die effiziente Erstellung, die parallele Bearbeitung und die Überprüfung komplexer Texte.",
+                  en: "Parallel Edition (Operation and Specific Modification)* 2. Format and Structure (Structuring and Version Control)\nUse of interactive work environments for efficient creation, parallel editing, and review of complex texts.",
+                  es: "Edición Paralela (Funcionamiento y Modificación Específica)* 2. Formato y Estructura (Estructuración y Control de Versiones)\nUso de entornos de trabajo interactivos para la creación eficiente, la edición paralela y la revisión de textos complejos.",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "" },
+              },
+              {
+                title: {
+                  de: "7. Fokus auf Notizen und Dokumente (Gemini als Beispiel)",
+                  en: "7. Focus on notebooks and documents (Gemini as an example).",
+                  es: "7.  Enfoque en cuadernos y documentos (Gemini como ejemplo)",
+                },
+                content: {
+                  de: 'Gemini Notebook & Fokus auf Dokumente (Integration von Informationen und antworten basierend auf Beweisen), Extraktion und Synthese, wobei ein etwas höherer Grad an Sicherheit mit kontrolliertem Inhalt gewährleistet wird (Retrieval Augmented Generation - RAG), zusätzliche Tools sind in diesem Werkzeug enthalten. Es wird auch auf andere Tools wie "Notebook in Copilot" hingewiesen.',
+                  en: "Gemini Notebook & Document Focus (Information integration and evidence-based responses), Extraction and Synthesis, working with increased security for contained content (Retrieval Augmented Generation - RAG), with additional tools included in this tool. Other tools, such as Notebook in Copilot, are also mentioned.",
+                  es: "Gemini Notebook & Enfoque en Documentos (Integración de información y respuestas basadas en evidencia), Extracción y Síntesis, trabajando con un poco más de seguridad con contenido contenido (Generación Aumentada por Recuperación (Retrieval Augmented Generation -RAG), herramientas adicionales incluidas en esta herramienta. Se hace mención a otras como Notebook en Copilot",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "" },
+              },
+            ],
+          },
+          {
+            title: {
+              de: "Modul 3. Fortgeschrittenes Niveau: Erstellung von KI-Agenten.",
+              en: "Module 3. Advanced Level: Creating Artificial Intelligence Agents.",
+              es: "Módulo 3. Nivel avanzado: Creación de agentes de inteligencia artificial.",
+            },
+            description: { de: "" },
+            lessons: [
+              {
+                title: {
+                  de: "8. Von der Konversation zum Prozessautomatisierer (Permanente Anleitungen und schrittweise Logik).",
+                  en: "8. From conversation to process automation (Permanent instructions and step-by-step logic).",
+                  es: "8. De la conversación al automatizador de procesos (Instrucciones permanentes y lógica paso a paso).",
+                },
+                content: {
+                  de: 'Der spezialisierte Agent (Wissensbasis und strukturierte Ausgabesteuerung).\nKonfiguration eigener KI-Agenten (als "Module" oder "Kompetenzen"), die komplexe Denkprozesse autonom ausführen und dabei eine vordefinierte Logik befolgen.',
+                  en: 'The specialized agent (knowledge base and structured output control).\nConfiguration of proprietary AI agents (such as "gems" or "skills") to autonomously perform complex thought processes, following a predefined logic.',
+                  es: 'El agente especializado (base de conocimientos y control estructurado de la salida).\nConfiguración de agentes de IA propios (como "gems" o "skills") para que realicen de forma autónoma procesos de pensamiento complejos, siguiendo una lógica predefinida.',
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "" },
+              },
+              {
+                title: {
+                  de: "9. Einführung: Agentenbasierte Künstliche Intelligenz.",
+                  en: "9. Introduction: Agent-Based Artificial Intelligence",
+                  es: "9. Introducción: Inteligencia Artificial Agéntica",
+                },
+                content: {
+                  de: "Diese Sitzung ist sehr kurz und dient lediglich dazu, die Definition und einige grundlegende Konzepte vorzustellen.",
+                  en: "This session is very short; it is only to present the definition and some basic concepts.",
+                  es: "Esta sesión es de muy corta duración es solo para presetnar la deficnición y algunos conceptos básicos",
+                },
+                resource: "",
+                resource_filename: "",
+                links: { es: "" },
+              },
+            ],
+          },
+          {
+            title: {
+              de: "Modul 4: Optional: Ethische und gesellschaftliche Diskussionen.",
+              en: "Module 4. Optional: Ethical and social debates.",
+              es: "Módulo 4. Opcional: Debates éticos y sociales.",
+            },
+            description: { de: "", es: "", en: "" },
+            lessons: [
+              {
+                title: {
+                  de: "Diskussionen: Die Wirkungen der Künstlichen Intelligenz",
+                  en: "Discussions: The Impact of Artificial Intelligence",
+                  es: "Discusiones: El impacto de la Inteligencia Artificial",
+                },
+                content: {
+                  de: "Dieser Raum ist konzipiert, um Themen wie die sozialen Herausforderungen des KI-Einsatzes, digitale Ausgrenzung, Kommunikationsschwierigkeiten, Arbeitsplatzverlust, KI-gestützte Kontrolle, kulturelle Kontrolle durch KI usw. sowie den Verbrauch von Wasser, Energie, Raum und Zeit zu diskutieren.",
+                  en: "This space is designed to discuss topics such as the social challenges of AI usage, digital exclusion, communication difficulties, job displacement, AI-driven control, cultural control by AI, etc., as well as the consumption of water, energy, space, and time, among others",
+                  es: "Este espacio está concebido para discutir temas como los retos sociales del uso de la IA, la exclusión digital, las dificultades de comunicación, la pérdida de empleo, el control por parte de la IA, el control cultural a través de la IA, etc., así como el consumo de agua, energía, espacio y tiempo, entre otros.",
+                },
+                links: { de: "", en: "", es: "" },
+                resource: "",
+                resource_filename: "",
+              },
+            ],
+          },
+          {
+            title: {
+              es: "Materiales y Actividades",
+              en: "Materials and Activities.",
+              de: "Materialien und Aktivitäten.",
+            },
+            description: {
+              es: "Materiales presentados durante el curso y actividades extras voluntarias para realizar por fuera del tiempo de la clase",
+              en: "Materials presented during the course and optional extra activities to be completed outside of class time.",
+              de: "Materialien, die während des Kurses präsentiert wurden, und zusätzliche, freiwillige Aktivitäten, die außerhalb der Kurszeiten bearbeitet werden können.",
+            },
+            lessons: [
+              {
+                title: {
+                  es: "Material del curso",
+                  en: "Course materials.",
+                  de: "Kursmaterialien",
+                },
+                content: {
+                  es: "Contenido de la lección.",
+                  en: "Lesson content.",
+                  de: "Inhalt der Lektion.",
+                },
+                links: { es: "", en: "", de: "" },
+                resource: "./recursos/IA_en_salud_colegas_CES.pdf",
+                resource_filename: "./recursos/IA_en_salud_colegas_CES.pdf",
+              },
+              {
+                title: {
+                  es: "Actividades voluntarias",
+                  en: "Volunteer activities.",
+                  de: "Freiwilligenaktivitäten.",
+                },
+                content: {
+                  es: "Actividades extras, voluntarias, para practicar aspectos explicados en el curso",
+                  en: "Additional, optional activities to practice concepts covered in the course.",
+                  de: "Zusätzliche, freiwillige Aktivitäten, um Aspekte zu vertiefen, die im Kurs behandelt wurden.",
+                },
+                links: { es: "", de: "" },
+                resource: "",
+                resource_filename: "",
+              },
+              {
+                title: {
+                  es: "LInks de interés",
+                  en: "Links of interest",
+                  de: "Interessante Links.",
+                },
+                content: {
+                  es: "Otros links de interés",
+                  en: "Other links of interest.",
+                  de: "Weitere interessante Links:",
+                },
+                links: { es: "" },
+                resource: "",
+                resource_filename: "",
+              },
+            ],
+          },
+          {
+            title: { es: "Acerca de mi", en: "About me", de: "Über mich" },
+            description: { es: "", en: "", de: "" },
+            lessons: [
+              {
+                title: {
+                  es: "En Linkedin",
+                  en: "On LinkedIn.",
+                  de: "Auf LinkedIn.",
+                },
+                content: {
+                  es: '<div style="text-align: center; margin-bottom: 20px;">\n  <a href="https://www.linkedin.com/in/hectorupegui" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class="badge-base LI-profile-badge" data-locale="es_ES" data-size="large" data-theme="light" data-type="VERTICAL" data-vanity="hectorupegui" data-version="v1"><\/div>\n\n<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"><\/script>',
+                  de: '<div style="text-align: center; margin-bottom: 20px;">\n  <a href="https://www.linkedin.com/in/hectorupegui" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class="badge-base LI-profile-badge" data-locale="es_ES" data-size="large" data-theme="light" data-type="VERTICAL" data-vanity="hectorupegui" data-version="v1"><\/div>\n\n<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"><\/script>',
+                  en: '<div style="text-align: center; margin-bottom: 20px;">\n  <a href="https://www.linkedin.com/in/hectorupegui" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #0a66c2; color: #ffffff; font-weight: bold; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-family: system-ui, sans-serif; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">\n    Hector Upegui\n  <\/a>\n<\/div>\n\n<div class="badge-base LI-profile-badge" data-locale="es_ES" data-size="large" data-theme="light" data-type="VERTICAL" data-vanity="hectorupegui" data-version="v1"><\/div>\n\n<script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"><\/script>',
+                },
+                links: { es: "", en: "", de: "" },
+                resource: "",
+                resource_filename: "",
+              },
+            ],
+          },
+        ],
+        course_welcome: {
+          es: "¡Bienvenido/a a la formación de IA para el trabajo y la vida diaria!\n\nPor favor, utilice el menú de la izquierda para ver los contenidos de cada sesión.\n\nEn este curso conocerá el funcionamiento y las posibilidades de aplicación de las herramientas de IA en la oficina y la vida diaria. Aprenderá a identificar las herramientas adecuadas para sus tareas, optimizar flujos de trabajo y tener en cuenta los aspectos necesarios de protección de datos.\n\nNota sobre la agenda: Los contenidos del curso se tratarán según lo descrito. Sin embargo, tenga en cuenta que el orden o el peso temporal de los temas pueden ajustarse ligeramente para mejorar el éxito del aprendizaje y debido al desarrollo dinámico de las herramientas de IA.\n\nEl desarrollo en el campo de la Inteligencia Artificial es extremadamente dinámico. Lo que ayer se consideraba un estándar, hoy puede haber quedado obsoleto debido a nuevas actualizaciones o herramientas. He hecho todo lo posible por mantener toda la información lo más actualizada y precisa posible; sin embargo, no asumo ninguna responsabilidad por la validez permanente de las funciones o condiciones mostradas.\n\nPara la creación de este material se utilizó IA con el fin de garantizar un flujo editorial profesional; sin embargo, el contenido sigue siendo 100% de autoría humana, reflejando la investigación original y el diseño pedagógico del autor.",
+          en: "Welcome to the AI training for work and daily life!\n\nPlease use the menu on the left to view the contents of each session.\n\nIn this course, you will learn how AI tools work and their application possibilities in the office and daily life. You will learn how to identify the right tools for your tasks, optimize workflows, and consider the necessary data protection aspects.\n\nNote on the agenda: The course content will be covered as described. However, please note that the order or the temporal weighting of the topics may be adjusted slightly to improve learning success and due to the dynamic development of AI tools.\n\nDevelopment in the field of Artificial Intelligence is extremely dynamic. What was considered a standard yesterday may now be obsolete due to new updates or tools. I have done my best to keep all the information as up-to-date and accurate as possible; however, I assume no responsibility for the permanent validity of the functions or conditions shown.\n\nAI was used in the creation of this material to ensure a professional editorial flow; however, the content remains 100% human-authored, reflecting the original research and pedagogical design of the author.",
+          de: "Willkommen zum KI-Training für Arbeit und Alltag!\n\nBitte verwenden Sie das Menü auf der linken Seite, um die Inhalte jeder Sitzung anzuzeigen.\n\nIn diesem Kurs lernen Sie die Funktionsweise und die Anwendungsmöglichkeiten von KI-Tools im Büro und im Alltag kennen. Sie lernen, die richtigen Tools für Ihre Aufgaben zu identifizieren, Arbeitsabläufe zu optimieren und die notwendigen Aspekte des Datenschutzes zu berücksichtigen.\n\nHinweis zum Programm: Die Inhalte des Kurses werden gemäß der Beschreibung behandelt. Bitte beachten Sie jedoch, dass die Reihenfolge oder die zeitliche Gewichtung der Themen leicht angepasst werden können, um den Lernerfolg zu verbessern und aufgrund der dynamischen Entwicklung der KI-Tools.\n\nDie Entwicklung im Bereich der Künstlichen Intelligenz ist extrem dynamisch. Was gestern noch als Standard galt, kann heute aufgrund neuer Updates oder Tools veraltet sein. Ich habe mein Bestes getan, um alle Informationen so aktuell und genau wie möglich zu halten; ich übernehme jedoch keine Verantwortung für die dauerhafte Gültigkeit der dargestellten Funktionen oder Bedingungen.\n\nBei der Erstellung dieses Materials wurde KI eingesetzt, um einen professionellen redaktionellen Ablauf zu gewährleisten; der Inhalt ist jedoch zu 100 % von menschlicher Urheberschaft, der die ursprüngliche Forschung und das pädagogische Design des Autors widerspiegelt.",
+        },
+      };
+      let currentLang = course.default_language || "es";
+      let activeSection = "welcome-section";
+      document.getElementById("langSelect").value = currentLang;
+
+      const I18N = {
+        es: {
+          lang: "Idioma:",
+          welcome: "bienvenido",
+          resources: "Recursos adjuntos",
+          open: "Abrir / Pantalla completa",
+          download: "Descargar",
+          links: "Enlaces",
+          pdfNote:
+            "Si el PDF no se muestra aquí, ábrelo o descárgalo con los botones.",
+          fileNote:
+            "Este tipo de archivo no se puede previsualizar. Descárgalo para abrirlo.",
+          module: "Módulo",
+          lesson: "Lección",
+        },
+        en: {
+          lang: "Language:",
+          welcome: "welcome",
+          resources: "Attached resources",
+          open: "Open / Fullscreen",
+          download: "Download",
+          links: "Links",
+          pdfNote:
+            "If the PDF is not displayed here, open or download it with the buttons.",
+          fileNote:
+            "This file type cannot be previewed. Download it to open it.",
+          module: "Module",
+          lesson: "Lesson",
+        },
+        de: {
+          lang: "Sprache:",
+          welcome: "willkommen",
+          resources: "Anhänge",
+          open: "Öffnen / Vollbild",
+          download: "Herunterladen",
+          links: "Links",
+          pdfNote:
+            "Wird das PDF hier nicht angezeigt, öffnen oder laden Sie es mit den Schaltflächen herunter.",
+          fileNote:
+            "Dieser Dateityp kann nicht als Vorschau angezeigt werden. Zum Öffnen herunterladen.",
+          module: "Modul",
+          lesson: "Lektion",
+        },
+      };
+
+      function pick(d, lang, fallback) {
+        fallback = fallback || "";
+        if (!d) return fallback;
+        if (d[lang]) return d[lang];
+        for (const l of ["es", "en", "de"]) {
+          if (d[l]) return d[l];
+        }
+        return fallback;
+      }
+
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function renderRichText(raw) {
+        const trimmed = (raw || "").trim();
+        // Si el usuario escribe código HTML explícito (ej. empieza con <script o <div), lo inyectamos directamente
+        if (trimmed.startsWith("<")) {
+          return raw;
+        }
+        const re = /https?:\/\/[^\s<>"']+/g;
+        let out = "",
+          last = 0,
+          m;
+        while ((m = re.exec(raw)) !== null) {
+          let url = m[0],
+            extra = "";
+          const trail = url.match(/[.,;:!?)\]]+$/);
+          if (trail) {
+            extra = trail[0];
+            url = url.slice(0, url.length - extra.length);
+          }
+          out += esc(raw.slice(last, m.index));
+          out +=
+            '<a class="inline-link" href="' +
+            esc(url) +
+            '" target="_blank" rel="noopener noreferrer">' +
+            esc(url) +
+            "</a>" +
+            esc(extra);
+          last = m.index + m[0].length;
+        }
+        return out + esc(raw.slice(last));
+      }
+
+      function normalizeUrl(u) {
+        u = (u || "").trim();
+        if (!u) return null;
+        if (/^www\./i.test(u)) return "https://" + u;
+        const m = u.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+        if (m) {
+          const s = m[1].toLowerCase();
+          return s === "http" || s === "https" || s === "mailto" ? u : null;
+        }
+        return "https://" + u;
+      }
+
+      function parseLinks(raw) {
+        const result = [];
+        (raw || "").split(/\r?\n/).forEach(function (line) {
+          line = line.trim();
+          if (!line) return;
+          let label = "",
+            url = line;
+          if (
+            !/^(https?:\/\/|mailto:|www\.)/i.test(line) &&
+            line.indexOf("|") !== -1
+          ) {
+            const idx = line.indexOf("|");
+            label = line.slice(0, idx).trim();
+            url = line.slice(idx + 1).trim();
+          }
+          const href = normalizeUrl(url);
+          if (!href) return;
+          result.push({ label: label || url, href: href });
+        });
+        return result;
+      }
+
+      function resourceUrl(path) {
+        return path.split("/").map(encodeURIComponent).join("/");
+      }
+
+      function renderResource(path, t) {
+        if (!path) return "";
+        const url = resourceUrl(path);
+        const name = path.split("/").pop();
+        const isPdf = /\.pdf$/i.test(name);
+        let html =
+          '<div class="resource"><div class="resource-head">' +
+          '<span class="resource-title">📎 ' +
+          esc(t.resources) +
+          ': <span class="resource-name">' +
+          esc(name) +
+          "</span></span>" +
+          '<span class="resource-actions">' +
+          (isPdf
+            ? '<a class="btn" href="' +
+              url +
+              '" target="_blank" rel="noopener">' +
+              esc(t.open) +
+              "</a>"
+            : "") +
+          '<a class="btn" href="' +
+          url +
+          '" download="' +
+          esc(name) +
+          '">' +
+          esc(t.download) +
+          "</a>" +
+          "</span></div>";
+        if (isPdf) {
+          html +=
+            '<div class="pdf-wrap"><iframe class="pdf-frame" src="' +
+            url +
+            '" title="' +
+            esc(name) +
+            '" loading="lazy"></iframe></div>' +
+            '<p class="note">' +
+            esc(t.pdfNote) +
+            "</p>";
+        } else {
+          html += '<p class="note">' + esc(t.fileNote) + "</p>";
+        }
+        return html + "</div>";
+      }
+
+      function changeLanguage(lang) {
+        currentLang = lang;
+        buildUI();
+      }
+
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("open");
+        document.getElementById("overlay").classList.toggle("show");
+      }
+
+      function showSection(id) {
+        activeSection = id;
+        document.querySelectorAll(".content-section").forEach(function (s) {
+          s.classList.remove("active");
+        });
+        const target = document.getElementById(id);
+        if (target) {
+          target.classList.add("active");
+          // Ejecuta cualquier etiqueta <script> interna (como widgets de LinkedIn)
+          target.querySelectorAll("script").forEach(function (oldScript) {
+            const newScript = document.createElement("script");
+            Array.from(oldScript.attributes).forEach((attr) =>
+              newScript.setAttribute(attr.name, attr.value),
+            );
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+          });
+        }
+        if (window.innerWidth < 1024) {
+          document.getElementById("sidebar").classList.remove("open");
+          document.getElementById("overlay").classList.remove("show");
+        }
+        document.getElementById("main-content").scrollTop = 0;
+      }
+
+      function buildUI() {
+        const t = I18N[currentLang] || I18N.es;
+        document.documentElement.lang = currentLang;
+        document.getElementById("lang-label").textContent = t.lang;
+
+        const titleText = pick(course.course_title, currentLang, "Curso");
+        const subtitleText = pick(course.course_subtitle, currentLang, "");
+        const welcomeText = pick(course.course_welcome, currentLang, "");
+        document.title = titleText;
+        document.getElementById("sidebar-course-title").textContent = titleText;
+        document.getElementById("header-course-title").textContent = titleText;
+
+        let navHTML =
+          '<button class="nav-welcome" onclick="showSection(\'welcome-section\')">📢 ' +
+          esc(t.welcome) +
+          "</button>";
+
+        let mainHTML =
+          '<article id="welcome-section" class="content-section">' +
+          '<h2 class="page-title">' +
+          esc(titleText) +
+          "</h2>" +
+          '<div class="welcome-box"><p class="subtitle">' +
+          esc(subtitleText) +
+          "</p>" +
+          '<div class="welcome-text">' +
+          renderRichText(welcomeText) +
+          "</div></div></article>";
+
+        (course.modules || []).forEach(function (module, mIdx) {
+          const sectionId = "module-section-" + mIdx;
+          const modTitle = pick(module.title, currentLang, t.module);
+          const modDesc = pick(module.description, currentLang, "");
+
+          navHTML +=
+            '<div class="module-block">' +
+            '<button class="module-btn" onclick="showSection(\'' +
+            sectionId +
+            "')\">" +
+            "<span>📅 " +
+            esc(modTitle) +
+            "</span>" +
+            "</button></div>";
+
+          mainHTML +=
+            '<article id="' +
+            sectionId +
+            '" class="content-section">' +
+            '<div class="module-head"><h2 class="module-title">' +
+            esc(modTitle) +
+            "</h2>" +
+            (modDesc
+              ? '<div class="module-desc">' + esc(modDesc) + "</div>"
+              : "") +
+            '</div><div class="lessons">';
+
+          (module.lessons || []).forEach(function (lesson, lIdx) {
+            const lesTitle = pick(lesson.title, currentLang, t.lesson);
+            const lesContent = pick(lesson.content, currentLang, "");
+            const links = parseLinks(pick(lesson.links, currentLang, ""));
+
+            let linksHTML = "";
+            if (links.length) {
+              linksHTML =
+                '<div class="links"><span class="links-title">🔗 ' +
+                esc(t.links) +
+                '</span><div class="links-list">' +
+                links
+                  .map(function (l) {
+                    return (
+                      '<a class="link-btn" href="' +
+                      esc(l.href) +
+                      '" target="_blank" rel="noopener noreferrer">' +
+                      esc(l.label) +
+                      "</a>"
+                    );
+                  })
+                  .join("") +
+                "</div></div>";
+            }
+
+            mainHTML +=
+              '<details class="lesson"' +
+              (lIdx === 0 ? " open" : "") +
+              ">" +
+              "<summary><h3>" +
+              esc(lesTitle) +
+              "</h3>" +
+              '<svg class="chev" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>' +
+              '</summary><div class="lesson-body">' +
+              '<div class="lesson-content">' +
+              renderRichText(lesContent) +
+              "</div>" +
+              linksHTML +
+              renderResource(lesson.resource_filename || "", t) +
+              "</div></details>";
+          });
+
+          mainHTML += "</div></article>";
+        });
+
+        document.getElementById("nav-container").innerHTML = navHTML;
+        document.getElementById("main-content").innerHTML = mainHTML;
+
+        const target =
+          document.getElementById(activeSection) ||
+          document.getElementById("welcome-section");
+        activeSection = target.id;
+        target.classList.add("active");
+      }
+
+      buildUI();
+    </script>
+  </body>
 </html>
